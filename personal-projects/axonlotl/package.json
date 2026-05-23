@@ -1,0 +1,17 @@
+{
+  "name": "axonlotl",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js",
+    "test": "node tests/test-runner.js"
+  },
+  "dependencies": {
+    "@google/genai": "^2.6.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "ws": "^8.21.0"
+  }
+}

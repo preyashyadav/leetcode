@@ -1,0 +1,1407 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Axonlotl — Battle Room</title>
+    <style>
+      :root {
+        --bg: #050505;
+        --card: #111111;
+        --card2: #0f0f0f;
+        --stroke: #222222;
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.62);
+        --teal: #5ee7ff;
+        --teal2: #2dd4bf;
+        --amber: #fbbf24;
+        --dead: #5b4b4f;
+        --danger: #ff5c7a;
+        --idleLine: #333333;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: radial-gradient(900px 600px at 70% 0%, rgba(94, 231, 255, 0.06), transparent 65%),
+          radial-gradient(900px 600px at 10% 20%, rgba(251, 191, 36, 0.05), transparent 55%),
+          var(--bg);
+        color: var(--text);
+        font-family: Inter, Geist, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        letter-spacing: -0.01em;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--stroke);
+        background: rgba(5, 5, 5, 0.75);
+        backdrop-filter: blur(10px);
+      }
+
+      header .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .sub {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      input,
+      button {
+        border: 1px solid var(--stroke);
+        background: rgba(255, 255, 255, 0.035);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 13px;
+        outline: none;
+      }
+
+      input {
+        width: 420px;
+      }
+
+      button {
+        cursor: pointer;
+        transition: background 0.15s ease, transform 0.05s ease, border-color 0.15s ease;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      button.primary {
+        border-color: rgba(251, 191, 36, 0.4);
+        background: linear-gradient(to bottom, rgba(251, 191, 36, 0.14), rgba(255, 255, 255, 0.03));
+      }
+
+      .pill {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--stroke);
+        background: rgba(255, 255, 255, 0.03);
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      .pill.good {
+        border-color: rgba(94, 231, 255, 0.22);
+        background: rgba(94, 231, 255, 0.06);
+      }
+
+      .pill.bad {
+        border-color: rgba(255, 92, 122, 0.22);
+        background: rgba(255, 92, 122, 0.06);
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(520px, 1.6fr) minmax(360px, 1fr);
+        gap: 14px;
+        padding: 14px;
+        height: calc(100vh - 60px);
+      }
+
+      .card {
+        background: var(--card2);
+        border: 1px solid var(--stroke);
+        border-radius: 18px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .card .title {
+        padding: 12px 14px;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.65);
+        border-bottom: 1px solid var(--stroke);
+        background: rgba(255, 255, 255, 0.025);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .gridRight {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 12px;
+        height: 100%;
+      }
+
+      /* Network */
+      #networkWrap {
+        height: 100%;
+        padding: 14px;
+      }
+
+      #network {
+        position: relative;
+        height: calc(100% - 0px);
+        border-radius: 16px;
+        background: #0b0b0b;
+        border: 1px solid var(--stroke);
+        overflow: hidden;
+      }
+
+      #lines {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        z-index: 0;
+      }
+
+      #crashOverlay {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        background: rgba(255, 92, 122, 0.07);
+        border: 1px solid rgba(255, 92, 122, 0.18);
+        backdrop-filter: blur(6px);
+      }
+
+      #nodes {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+      }
+
+      #crashOverlay h2 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      #crashOverlay p {
+        margin: 8px 0 0 0;
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .node {
+        position: absolute;
+        width: 210px;
+        padding: 12px 12px 10px;
+        border-radius: 16px;
+        border: 1px solid var(--stroke);
+        background: var(--card);
+        backdrop-filter: blur(10px);
+        transform: translate(-50%, -50%);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .ports {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .port {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04);
+      }
+
+      .port.out {
+        right: -7px;
+        top: 52%;
+        transform: translateY(-50%);
+      }
+
+      .port.in {
+        left: -7px;
+        top: 52%;
+        transform: translateY(-50%);
+      }
+
+      .node.active {
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.18), 0 10px 30px rgba(0, 0, 0, 0.35);
+        border-color: rgba(94, 231, 255, 0.28);
+      }
+
+      .node .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .node .name {
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.86);
+      }
+
+      .statusDot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(94, 231, 255, 0.35);
+        box-shadow: 0 0 18px rgba(94, 231, 255, 0.25);
+        animation: pulseTeal 2.2s ease-in-out infinite;
+      }
+
+      .node.dead .statusDot {
+        background: rgba(91, 75, 79, 0.85);
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+        animation: none;
+      }
+
+      .node.dead {
+        opacity: 0.4;
+        border-color: rgba(255, 92, 122, 0.22);
+      }
+
+      .tagRow {
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.02);
+        color: rgba(255, 255, 255, 0.75);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .tag.warn {
+        border-color: rgba(251, 191, 36, 0.25);
+        color: rgba(251, 191, 36, 0.95);
+        background: rgba(251, 191, 36, 0.06);
+      }
+
+      .tag.ok {
+        border-color: rgba(94, 231, 255, 0.22);
+        color: rgba(94, 231, 255, 0.9);
+        background: rgba(94, 231, 255, 0.05);
+      }
+
+      .miniToggle {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+
+      .miniToggle input {
+        width: 34px;
+        height: 18px;
+      }
+
+      .miniToggle input::after {
+        width: 12px;
+        height: 12px;
+        left: 3px;
+      }
+
+      .miniToggle input:checked::after {
+        left: 17px;
+      }
+
+      @keyframes pulseTeal {
+        0% {
+          box-shadow: 0 0 0 rgba(94, 231, 255, 0);
+          opacity: 0.6;
+        }
+        40% {
+          box-shadow: 0 0 22px rgba(94, 231, 255, 0.22);
+          opacity: 1;
+        }
+        100% {
+          box-shadow: 0 0 0 rgba(94, 231, 255, 0);
+          opacity: 0.6;
+        }
+      }
+
+      .node .meta {
+        margin-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 12px;
+      }
+
+      .bar {
+        margin-top: 10px;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+
+      .bar > div {
+        height: 100%;
+        border-radius: 999px;
+        background: rgba(94, 231, 255, 0.7);
+        box-shadow: 0 0 18px rgba(94, 231, 255, 0.25);
+      }
+
+      .node.dead .bar > div {
+        background: rgba(91, 75, 79, 0.9);
+        box-shadow: none;
+      }
+
+      .toggles {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+      }
+
+      .switch input {
+        width: 36px;
+        height: 20px;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        position: relative;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .switch input::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        top: 50%;
+        left: 4px;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.75);
+        transition: left 0.15s ease, background 0.15s ease;
+      }
+
+      .switch input:checked {
+        background: rgba(255, 92, 122, 0.12);
+        border-color: rgba(255, 92, 122, 0.25);
+      }
+
+      .switch input:checked::after {
+        left: 18px;
+        background: rgba(255, 92, 122, 0.95);
+      }
+
+      .pulse {
+        animation: pulseAmber 2s ease-in-out 1;
+        border-color: rgba(251, 191, 36, 0.35);
+        box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.18), 0 0 42px rgba(251, 191, 36, 0.12);
+      }
+
+      @keyframes pulseAmber {
+        0% {
+          box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.18), 0 0 0 rgba(251, 191, 36, 0);
+        }
+        45% {
+          box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25), 0 0 42px rgba(251, 191, 36, 0.16);
+        }
+        100% {
+          box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.18), 0 0 0 rgba(251, 191, 36, 0);
+        }
+      }
+
+      /* Rings */
+      .rings {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .ringCard {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .ring {
+        width: 66px;
+        height: 66px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: conic-gradient(rgba(94, 231, 255, 0.85) 0deg, rgba(255, 255, 255, 0.08) 0deg);
+        position: relative;
+      }
+
+      .ring::after {
+        content: "";
+        position: absolute;
+        inset: 8px;
+        border-radius: 999px;
+        background: rgba(5, 5, 5, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .ringText {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        z-index: 2;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .metricLabel {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .metricValue {
+        margin-top: 4px;
+        font-size: 18px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .metricSub {
+        margin-top: 4px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      /* Activity feed */
+      #feed {
+        padding: 10px 12px 12px;
+        overflow: auto;
+      }
+
+      .feedItem {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 10px;
+        padding: 10px 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.015);
+        margin-bottom: 10px;
+      }
+
+      #ledger {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        width: min(520px, 70%);
+        background: rgba(0, 0, 0, 0.62);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 10px 12px;
+        backdrop-filter: blur(10px);
+        pointer-events: auto;
+        z-index: 3;
+      }
+
+      #ledgerTitle {
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.62);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      #ledgerBody {
+        margin-top: 8px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.78);
+        line-height: 1.35;
+        max-height: 160px;
+        overflow: auto;
+      }
+
+      .ledgerGold {
+        color: rgba(251, 191, 36, 0.95);
+      }
+
+      .coverageAura {
+        animation: pulseGold 1.3s ease-in-out infinite;
+        border-color: rgba(251, 191, 36, 0.35);
+      }
+
+      @keyframes pulseGold {
+        0% {
+          box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.12), 0 0 0 rgba(251, 191, 36, 0);
+        }
+        55% {
+          box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.22), 0 0 28px rgba(251, 191, 36, 0.14);
+        }
+        100% {
+          box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.12), 0 0 0 rgba(251, 191, 36, 0);
+        }
+      }
+
+      .node.dead {
+        filter: grayscale(0.6);
+      }
+
+      .anchor {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 1px;
+        height: 1px;
+        pointer-events: none;
+      }
+
+      .glitch {
+        animation: glitch 0.5s linear 1;
+      }
+
+      @keyframes glitch {
+        0% { filter: none; transform: none; }
+        15% { filter: contrast(1.2) saturate(1.2); transform: translateX(-4px); }
+        30% { filter: hue-rotate(12deg) contrast(1.3); transform: translateX(5px); }
+        45% { filter: grayscale(0.2) contrast(1.2); transform: translateY(-3px); }
+        60% { filter: none; transform: none; }
+        100% { filter: none; transform: none; }
+      }
+
+      .feedIcon {
+        width: 18px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .feedText {
+        font-size: 13px;
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.88);
+      }
+
+      .ts {
+        color: rgba(255, 255, 255, 0.55);
+        font-variant-numeric: tabular-nums;
+        margin-right: 8px;
+      }
+
+      /* Diagnosis */
+      .diagnosisBox {
+        padding: 12px;
+      }
+
+      .badgeRow {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .badge {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(94, 231, 255, 0.22);
+        background: rgba(94, 231, 255, 0.06);
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 12px;
+      }
+
+      .note {
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        color: rgba(255, 255, 255, 0.92);
+        line-height: 1.35;
+        font-size: 13px;
+      }
+
+      @media (max-width: 1100px) {
+        main {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+        input {
+          width: 280px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div>
+          <h1>Axonlotl</h1>
+          <div class="sub">Self-healing multi-agent infrastructure</div>
+        </div>
+      </div>
+      <div class="controls">
+        <input id="task" value="Create a secure express login route" />
+        <button id="simulateStroke" class="primary">Simulate Stroke</button>
+        <button id="refreshNetwork">REFRESH NETWORK</button>
+        <button id="runAxonlotl">Run Axonlotl</button>
+        <button id="runBrittle">Brittle</button>
+        <button id="startChaos">Chaos</button>
+        <button id="globalHeal">Global Heal</button>
+        <span id="wsStatus" class="pill">WS: connecting</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="title">
+          <span>Network Map</span>
+          <span class="sub" id="netSubtitle">Neuroplastic axons brighten as weights strengthen</span>
+        </div>
+        <div id="networkWrap">
+          <div id="network">
+            <canvas id="lines"></canvas>
+            <div id="crashOverlay">
+              <h2>Pipeline Crashed</h2>
+              <p>Brittle mode: one failure terminates execution.</p>
+            </div>
+            <div id="nodes"></div>
+            <div id="ledger">
+              <div id="ledgerTitle">
+                <span>Synaptic Ledger</span>
+                <span class="sub" id="ledgerMeta">Pattern traces</span>
+              </div>
+              <div id="ledgerBody"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="gridRight">
+        <div class="card">
+          <div class="title"><span>Vitals</span><span class="sub">R + Stability</span></div>
+          <div class="rings">
+            <div class="ringCard">
+              <div class="ring" id="ringR"><div class="ringText" id="ringRText">—</div></div>
+              <div>
+                <div class="metricLabel">Reliability (R)</div>
+                <div class="metricValue" id="valR">—</div>
+                <div class="metricSub">Health ring shrinks under failure</div>
+              </div>
+            </div>
+            <div class="ringCard">
+              <div class="ring" id="ringS"><div class="ringText" id="ringSText">—</div></div>
+              <div>
+                <div class="metricLabel">Stability</div>
+                <div class="metricValue" id="valS">—</div>
+                <div class="metricSub">100% = 0% deviation</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="title"><span>Activity Feed</span><span class="sub">Human-readable trace</span></div>
+          <div id="feed"></div>
+        </div>
+
+        <div class="card">
+          <div class="title"><span>Axonlotl Core: Managed Immune Analysis</span></div>
+          <div class="diagnosisBox">
+            <div class="badgeRow">
+              <span class="badge">Verified by Gemini</span>
+              <span class="sub" id="diagMeta">Awaiting clinical summary…</span>
+            </div>
+            <div class="note" id="doctorNote">Run a pipeline to generate a clinical summary.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      const $ = (id) => document.getElementById(id);
+      const wsStatus = $("wsStatus");
+      const crashOverlay = $("crashOverlay");
+      const feedEl = $("feed");
+      const nodesEl = $("nodes");
+      const lines = $("lines");
+      const ctx = lines.getContext("2d");
+
+      const ringR = $("ringR");
+      const ringS = $("ringS");
+      const ringRText = $("ringRText");
+      const ringSText = $("ringSText");
+      const valR = $("valR");
+      const valS = $("valS");
+      const doctorNote = $("doctorNote");
+      const diagMeta = $("diagMeta");
+      const taskEl = $("task");
+      const ledgerBody = $("ledgerBody");
+
+      const pipeline = ["planner", "coder", "reviewer", "tester", "deployer"];
+
+      const edges = [
+        { from: "reviewer", to: "tester", key: "reviewer→tester", base: 0.6 },
+        { from: "reviewer", to: "planner", key: "reviewer→planner", base: 0.3 },
+        { from: "tester", to: "reviewer", key: "tester→reviewer", base: 0.4 },
+        { from: "tester", to: "coder", key: "tester→coder", base: 0.3 },
+        { from: "coder", to: "planner", key: "coder→planner", base: 0.5 },
+        { from: "planner", to: "coder", key: "planner→coder", base: 0.4 },
+        { from: "deployer", to: "tester", key: "deployer→tester", base: 0.3 }
+      ];
+
+      const state = {
+        mode: "axonlotl",
+        crashed: false,
+        routeWeights: {},
+        lastReroute: null,
+        activeEdges: new Map(), // key -> until
+        R: 1,
+        I: 0,
+        rerouteCount: 0
+      };
+
+      const NODE_POS = new Map(); // id -> {x,y}
+      let dashPhase = 0;
+
+      function getAnchorCenters() {
+        const crect = lines.getBoundingClientRect();
+        /** @type {Record<string,{x:number,y:number}>} */
+        const centers = {};
+        for (const id of pipeline) {
+          // Port-centered anchoring (Rete-like). Fallback to card anchor.
+          const out = nodesEl.querySelector(`.node[data-id="${id}"] .port.out`);
+          const inn = nodesEl.querySelector(`.node[data-id="${id}"] .port.in`);
+          const el = out || inn || nodesEl.querySelector(`.node[data-id="${id}"] .anchor`);
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          centers[id] = {
+            x: r.left - crect.left + r.width / 2,
+            y: r.top - crect.top + r.height / 2
+          };
+        }
+        return centers;
+      }
+
+      function getPortCenters() {
+        const crect = lines.getBoundingClientRect();
+        /** @type {Record<string,{in:{x:number,y:number},out:{x:number,y:number}}>} */
+        const ports = {};
+        for (const id of pipeline) {
+          const out = nodesEl.querySelector(`.node[data-id="${id}"] .port.out`);
+          const inn = nodesEl.querySelector(`.node[data-id="${id}"] .port.in`);
+          if (!out || !inn) continue;
+          const ro = out.getBoundingClientRect();
+          const ri = inn.getBoundingClientRect();
+          ports[id] = {
+            out: { x: ro.left - crect.left + ro.width / 2, y: ro.top - crect.top + ro.height / 2 },
+            in: { x: ri.left - crect.left + ri.width / 2, y: ri.top - crect.top + ri.height / 2 }
+          };
+        }
+        return ports;
+      }
+
+      function ts() {
+        const d = new Date();
+        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function iconSvg(name, color = "rgba(255,255,255,0.8)") {
+        const common = `fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"`;
+        if (name === "spark")
+          return `<svg width="18" height="18" viewBox="0 0 24 24" ${common}><path d="M13 2L3 14h7l-1 8 12-14h-7l-1-6z"/></svg>`;
+        if (name === "ok")
+          return `<svg width="18" height="18" viewBox="0 0 24 24" ${common}><path d="M20 6 9 17l-5-5"/></svg>`;
+        if (name === "warn")
+          return `<svg width="18" height="18" viewBox="0 0 24 24" ${common}><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>`;
+        if (name === "brain")
+          return `<svg width="18" height="18" viewBox="0 0 24 24" ${common}><path d="M9.5 3A4.5 4.5 0 0 0 5 7.5V9a3 3 0 0 0 0 6v1.5A4.5 4.5 0 0 0 9.5 21"/><path d="M14.5 3A4.5 4.5 0 0 1 19 7.5V9a3 3 0 0 1 0 6v1.5A4.5 4.5 0 0 1 14.5 21"/><path d="M9 7h.01"/><path d="M15 7h.01"/></svg>`;
+        return `<svg width="18" height="18" viewBox="0 0 24 24" ${common}><circle cx="12" cy="12" r="9"/></svg>`;
+      }
+
+      function addFeed(kind, text) {
+        const row = document.createElement("div");
+        row.className = "feedItem";
+        const color =
+          kind === "ok"
+            ? "rgba(94,231,255,0.95)"
+            : kind === "warn"
+              ? "rgba(251,191,36,0.95)"
+              : kind === "brain"
+                ? "rgba(94,231,255,0.95)"
+                : "rgba(255,255,255,0.85)";
+        const iconName = kind === "ok" ? "ok" : kind === "warn" ? "warn" : kind === "brain" ? "brain" : "spark";
+        row.innerHTML = `
+          <div class="feedIcon">${iconSvg(iconName, color)}</div>
+          <div class="feedText"><span class="ts">[${ts()}]</span>${text}</div>
+        `;
+        feedEl.prepend(row);
+        while (feedEl.childNodes.length > 10) feedEl.removeChild(feedEl.lastChild);
+      }
+
+      function ledger(line) {
+        const div = document.createElement("div");
+        div.textContent = line;
+        ledgerBody.prepend(div);
+        while (ledgerBody.childNodes.length > 8) ledgerBody.removeChild(ledgerBody.lastChild);
+      }
+
+      function ledgerGold(line) {
+        const div = document.createElement("div");
+        div.textContent = line;
+        div.className = "ledgerGold";
+        ledgerBody.prepend(div);
+        while (ledgerBody.childNodes.length > 8) ledgerBody.removeChild(ledgerBody.lastChild);
+      }
+
+      function setCrashed(on) {
+        state.crashed = on;
+        crashOverlay.style.display = on ? "flex" : "none";
+      }
+
+      function edgeWeight(key) {
+        const entry = state.routeWeights?.[key];
+        const w = typeof entry?.weight === "number" ? entry.weight : typeof entry === "number" ? entry : 0.5;
+        return Number.isFinite(w) ? w : 0.5;
+      }
+
+      function setRing(el, value01, scheme = "teal") {
+        const v = Math.max(0, Math.min(1, Number(value01)));
+        const deg = Math.floor(v * 360);
+        let col = "rgba(94,231,255,0.85)";
+        if (scheme === "stability") {
+          col = v > 0.7 ? "rgba(94,231,255,0.85)" : v > 0.4 ? "rgba(251,191,36,0.95)" : "rgba(255,92,122,0.95)";
+        }
+        if (scheme === "reliability") {
+          col = v > 0.75 ? "rgba(94,231,255,0.85)" : v > 0.5 ? "rgba(251,191,36,0.95)" : "rgba(255,92,122,0.95)";
+        }
+        el.style.background = `conic-gradient(${col} ${deg}deg, rgba(255,255,255,0.08) ${deg}deg)`;
+      }
+
+      function fitCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = lines.getBoundingClientRect();
+        lines.width = Math.floor(rect.width * dpr);
+        lines.height = Math.floor(rect.height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function computeLayout() {
+        const rect = $("network").getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+
+        const leftX = w * 0.18;
+        const midX = w * 0.5;
+        const rightX = w * 0.82;
+        const topY = h * 0.32;
+        const botY = h * 0.68;
+
+        const positions = {
+          planner: { x: leftX, y: botY },
+          coder: { x: midX - w * 0.18, y: topY },
+          reviewer: { x: midX, y: botY },
+          tester: { x: midX + w * 0.18, y: topY },
+          deployer: { x: rightX, y: botY }
+        };
+
+        NODE_POS.clear();
+        for (const [k, v] of Object.entries(positions)) NODE_POS.set(k, v);
+      }
+
+      function renderNodes() {
+        nodesEl.innerHTML = "";
+        for (const id of pipeline) {
+          const pos = NODE_POS.get(id);
+          const div = document.createElement("div");
+          div.className = "node";
+          div.dataset.id = id;
+          div.style.left = `${pos.x}px`;
+          div.style.top = `${pos.y}px`;
+          div.innerHTML = `
+            <div class="top">
+              <div class="name">${id}</div>
+              <div class="statusDot"></div>
+            </div>
+            <div class="meta">
+              <div><span style="color:rgba(255,255,255,0.6)">Health</span> <span class="hVal">1.00</span></div>
+              <div class="modeHint"></div>
+            </div>
+            <div class="tagRow">
+              <span class="tag ok statusTag">IDLE</span>
+              <label class="switch miniToggle" title="Kill/Heal toggle">
+                <input type="checkbox" class="killSw" />
+              </label>
+            </div>
+            <div class="anchor" aria-hidden="true"></div>
+            <div class="ports" aria-hidden="true">
+              <div class="port in"></div>
+              <div class="port out"></div>
+            </div>
+            <div class="bar"><div class="barFill" style="width:100%"></div></div>
+          `;
+
+          div.querySelector(".killSw").addEventListener("change", async (e) => {
+            const on = e.target.checked;
+            if (on) {
+              await fetch("/inject_fault", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ agentName: id, faultType: "kill" })
+              });
+              return;
+            }
+            await fetch("/api/chaos", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ agent: id, action: "heal" })
+            });
+          });
+
+          nodesEl.appendChild(div);
+        }
+      }
+
+      function updateNodeHealth(agent, health) {
+        const node = nodesEl.querySelector(`.node[data-id="${agent}"]`);
+        if (!node) return;
+        const h = Math.max(0, Math.min(1, Number(health)));
+        node.querySelector(".hVal").textContent = h.toFixed(2);
+        node.querySelector(".barFill").style.width = `${Math.round(h * 100)}%`;
+        node.classList.toggle("dead", h === 0);
+
+        const tag = node.querySelector(".statusTag");
+        if (h === 0) {
+          tag.textContent = "DEAD";
+          tag.className = "tag warn statusTag";
+        } else if (tag.textContent === "DEAD") {
+          tag.textContent = "IDLE";
+          tag.className = "tag ok statusTag";
+        }
+      }
+
+      function setTag(agent, text, kind = "ok") {
+        const node = nodesEl.querySelector(`.node[data-id="${agent}"]`);
+        if (!node) return;
+        const tag = node.querySelector(".statusTag");
+        tag.textContent = text;
+        tag.className = `tag ${kind} statusTag`;
+      }
+
+      function setCoverageAura(agent, on) {
+        const node = nodesEl.querySelector(`.node[data-id="${agent}"]`);
+        if (!node) return;
+        node.classList.toggle("coverageAura", Boolean(on));
+      }
+
+      function setActive(agent, on) {
+        const node = nodesEl.querySelector(`.node[data-id="${agent}"]`);
+        if (!node) return;
+        node.classList.toggle("active", Boolean(on));
+      }
+
+      function pulseNode(agent) {
+        const node = nodesEl.querySelector(`.node[data-id="${agent}"]`);
+        if (!node) return;
+        node.classList.add("pulse");
+        setTimeout(() => node.classList.remove("pulse"), 2000);
+      }
+
+      function markEdgeActive(from, to, ms = 2200) {
+        const key = `${from}→${to}`;
+        state.activeEdges.set(key, Date.now() + ms);
+      }
+
+      function drawLine(a, b, opts) {
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineWidth = opts.w;
+        ctx.globalAlpha = opts.alpha;
+        ctx.strokeStyle = opts.color;
+        ctx.shadowBlur = opts.glow;
+        ctx.shadowColor = opts.color;
+        const dx = Math.max(80, Math.min(220, Math.abs(b.x - a.x) * 0.55));
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.bezierCurveTo(a.x + dx, a.y, b.x - dx, b.y, b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawDetour(from, to, failed, centers) {
+        const a = centers[from];
+        const b = centers[to];
+        if (!a || !b) return;
+        const midX = (a.x + b.x) / 2;
+        const midY = (a.y + b.y) / 2;
+        const f = failed ? centers[failed] : null;
+
+        let ctrlX = midX;
+        let ctrlY = midY + 140;
+        if (f) {
+          const vx = b.x - a.x;
+          const vy = b.y - a.y;
+          const len = Math.hypot(vx, vy) || 1;
+          const nx = -vy / len;
+          const ny = vx / len;
+          const dir = ((f.x - midX) * nx + (f.y - midY) * ny) > 0 ? -1 : 1;
+          ctrlX = midX + nx * 190 * dir;
+          ctrlY = midY + ny * 190 * dir;
+        }
+
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineWidth = 10;
+        ctx.globalAlpha = 0.9;
+        ctx.strokeStyle = "rgba(251,191,36,0.92)";
+        ctx.shadowBlur = 26;
+        ctx.shadowColor = "rgba(251,191,36,0.45)";
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function render() {
+        const rect = lines.getBoundingClientRect();
+        ctx.clearRect(0, 0, rect.width, rect.height);
+
+        const ports = getPortCenters();
+        const centers = getAnchorCenters();
+
+        // marching-ants phase
+        dashPhase = (dashPhase + 0.8) % 1000;
+
+        for (const e of edges) {
+          const a = ports[e.from]?.out ?? centers[e.from];
+          const b = ports[e.to]?.in ?? centers[e.to];
+          if (!a || !b) continue;
+
+          const w = edgeWeight(e.key);
+          const activeUntil = state.activeEdges.get(e.key);
+          const isActive = activeUntil && activeUntil > Date.now();
+          if (activeUntil && activeUntil <= Date.now()) state.activeEdges.delete(e.key);
+
+          const thickness = 1 + Math.min(10, w * 3 + e.base * 3) + (isActive ? 3 : 0);
+          const alpha = 0.10 + Math.min(0.30, w * 0.12) + (isActive ? 0.25 : 0);
+          const glow = isActive ? 20 : 6;
+          const color = isActive ? "rgba(94,231,255,0.85)" : "rgba(255,255,255,0.16)";
+
+          // idle synapse (bezier so it won't "cut through" cards)
+          drawLine(a, b, { w: thickness, alpha, glow, color });
+
+          // active flow overlay: marching ants
+          if (isActive) {
+            ctx.save();
+            ctx.setLineDash([10, 10]);
+            ctx.lineDashOffset = -dashPhase;
+            ctx.globalAlpha = 0.85;
+            ctx.strokeStyle = "rgba(94,231,255,0.75)";
+            ctx.lineWidth = Math.max(2, thickness - 1);
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = "rgba(94,231,255,0.35)";
+            ctx.beginPath();
+            const dx = Math.max(80, Math.min(220, Math.abs(b.x - a.x) * 0.55));
+            ctx.moveTo(a.x, a.y);
+            ctx.bezierCurveTo(a.x + dx, a.y, b.x - dx, b.y, b.x, b.y);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        if (state.lastReroute && Date.now() - state.lastReroute.ts < 2500) {
+          drawDetour(state.lastReroute.from, state.lastReroute.to, state.lastReroute.failed, centers);
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      function onResize() {
+        computeLayout();
+        renderNodes();
+        fitCanvas();
+      }
+
+      window.addEventListener("resize", onResize);
+      onResize();
+      requestAnimationFrame(render);
+
+      function describeEvent(event) {
+        const a = (event.agent || "").toString();
+        const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+        if (event.type === "agent_fire") return { kind: "ok", text: `🟢 ${cap(a)} is analyzing the task…` };
+        if (event.type === "reroute")
+          return {
+            kind: "warn",
+            text: `⚠️ ${cap(event.to)} is taking over for ${cap(event.failedAgent)}. Reason: ${event.overlap?.text ?? "capability overlap detected."}`
+          };
+        if (event.type === "reroute_complete" && event.route?.key)
+          return {
+            kind: "ok",
+            text: `🟢 Recovery stabilized. Synaptic weight for ${event.route.key} → ${Number(event.route.weight).toFixed(2)}.`
+          };
+        if (event.type === "drift_detected") return { kind: "warn", text: `Semantic drift detected in ${cap(a)} (score ${Number(event.score).toFixed(2)}).` };
+        if (event.type === "agent_blocked") return { kind: "warn", text: `${cap(a)} blocked (${event.reason}).` };
+        if (event.type === "agent_skipped") return { kind: "warn", text: `${cap(a)} skipped (low health).` };
+        if (event.type === "pipeline_complete")
+          return { kind: "ok", text: `🟢 Pipeline complete. Reliability ${Number(event.R).toFixed(2)}.` };
+        if (event.type === "brain_diagnosis") return { kind: "brain", text: String(event.text ?? "") };
+        if (event.type === "shadow_started") return { kind: "warn", text: `Chaos Engine started (shadow pipeline).` };
+        if (event.type === "shadow_stopped") return { kind: "ok", text: `Chaos Engine stopped.` };
+        if (event.type === "shadow_injected") return { kind: "warn", text: `Shadow fault injected: ${cap(event.agent)} (${event.fault}).` };
+        return null;
+      }
+
+      function updateVitals(R, Idev) {
+        const r = Math.max(0, Math.min(1, Number(R)));
+        const idev = Math.max(0, Math.min(1, Number(Idev)));
+        // Stability = "strength of the neural chain" (drops when backups/reroutes are used).
+        // This makes it visually consistent: a fragile chain can have low R and also low Stability.
+        const stability = Math.max(0, Math.min(1, 1 - 0.18 * (state.rerouteCount || 0) - 0.35 * idev));
+
+        state.R = r;
+        state.I = idev;
+
+        valR.textContent = r.toFixed(2);
+        valS.textContent = `${Math.round(stability * 100)}%`;
+        ringRText.textContent = `${Math.round(r * 100)}%`;
+        ringSText.textContent = `${Math.round(stability * 100)}%`;
+
+        setRing(ringR, r, "reliability");
+        setRing(ringS, stability, "stability");
+      }
+
+      const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+      const ws = new WebSocket(wsUrl);
+
+      ws.addEventListener("open", () => {
+        wsStatus.textContent = "WS: connected";
+        wsStatus.className = "pill good";
+        addFeed("ok", "Connected to Axonlotl event stream.");
+      });
+
+      ws.addEventListener("close", () => {
+        wsStatus.textContent = "WS: closed";
+        wsStatus.className = "pill bad";
+        addFeed("warn", "WebSocket disconnected.");
+      });
+
+      ws.addEventListener("message", (msg) => {
+        let event;
+        try {
+          event = JSON.parse(msg.data);
+        } catch {
+          return;
+        }
+
+        const d = describeEvent(event);
+        if (d) addFeed(d.kind, d.text);
+
+        if (event.type === "pipeline_crashed" || (state.mode === "brittle" && event.type === "no_alternative")) {
+          setCrashed(true);
+        }
+
+        if (event.type === "run_start") {
+          state.mode = event.mode;
+          setCrashed(false);
+          diagMeta.textContent = "Running immune analysis…";
+        }
+
+        if (event.type === "agent_fire" && typeof event.health === "number") {
+          updateNodeHealth(event.agent, event.health);
+          setActive(event.agent, true);
+          setTag(event.agent, "ACTIVE", "ok");
+          ledger(`[PROTOCOL] Pattern 1: Experience-Independent Baseline (Fast Path) engaged for ${event.agent}.`);
+          setTimeout(() => {
+            setActive(event.agent, false);
+            setTag(event.agent, "IDLE", "ok");
+          }, 900);
+          const idx = pipeline.indexOf(event.agent);
+          const next = pipeline[idx + 1];
+          if (next) markEdgeActive(event.agent, next, 2200);
+        }
+
+        if (event.type === "agent_skipped") {
+          if (typeof event.health === "number") updateNodeHealth(event.agent, event.health);
+        }
+
+        if (event.type === "agent_blocked") {
+          updateNodeHealth(event.agent, 0);
+        }
+
+        if (event.type === "agent_state") {
+          if (typeof event.state?.health === "number") updateNodeHealth(event.agent, event.state.health);
+        }
+
+        if (event.type === "reroute") {
+          state.lastReroute = { from: event.from, to: event.to, failed: event.failedAgent, ts: Date.now() };
+          if (event.to) pulseNode(event.to);
+          if (event.to) setTag(event.to, `COVERAGE MODE (${Math.round((event.coverage ?? 0) * 100)}% OVERLAP)`, "warn");
+          if (event.to) setCoverageAura(event.to, true);
+          if (event.to) setTimeout(() => { setTag(event.to, "IDLE", "ok"); setCoverageAura(event.to, false); }, 2200);
+          if (event.from && event.to) markEdgeActive(event.from, event.to, 2500);
+          ledgerGold(`[CRITICAL] Pattern 3: Experience-Expectant Functional Rerouting (Lesion Recovery) triggered. Bypassing ${event.failedAgent}.`);
+          ledgerGold(`Calculating capability overlap... Found ${event.to} (Score: ${Number(event.coverage ?? 0).toFixed(2)}).`);
+        }
+
+        if (event.type === "reroute_complete" && event.routeWeights) {
+          state.routeWeights = event.routeWeights;
+          if (event.route?.key && typeof event.route?.weight === "number") {
+            ledger(`[LEARNING] Pattern 2: Experience-Dependent Structural Adaptation (LTP). Strengthening synapse ${event.route.key} to ${event.route.weight.toFixed(2)}.`);
+          }
+        }
+
+        if (event.type === "pipeline_complete") {
+          setCrashed(false);
+          state.rerouteCount = Number(event.rerouteCount ?? 0);
+          updateVitals(event.R, event.I_dev ?? 0);
+          if (event.routeWeights) state.routeWeights = event.routeWeights;
+          diagMeta.textContent = "Clinical summary received.";
+        }
+
+        if (event.type === "brain_diagnosis") {
+          // typewriter effect
+          const full = String(event.text ?? "");
+          doctorNote.textContent = "";
+          let i = 0;
+          const iv = setInterval(() => {
+            i += 1;
+            doctorNote.textContent = full.slice(0, i);
+            if (i >= full.length) clearInterval(iv);
+          }, 14);
+        }
+
+        if (event.type === "shadow_update") {
+          updateVitals(event.predictedR ?? state.R, event.predictedI_dev ?? state.I);
+        }
+      });
+
+      async function startRun(mode) {
+        setCrashed(false);
+        state.mode = mode;
+        await fetch("/api/run", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ task: taskEl.value, mode })
+        });
+      }
+
+      $("runAxonlotl").addEventListener("click", async () => {
+        await startRun("axonlotl");
+      });
+
+      $("runBrittle").addEventListener("click", async () => {
+        await startRun("brittle");
+      });
+
+      let chaosOn = false;
+      $("startChaos").addEventListener("click", async () => {
+        chaosOn = !chaosOn;
+        $("startChaos").textContent = chaosOn ? "Chaos (On)" : "Chaos";
+        await fetch(chaosOn ? "/api/shadow/start" : "/api/shadow/stop", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: chaosOn ? JSON.stringify({ intervalMs: 30000, miniSteps: 2, task: taskEl.value }) : "{}"
+        });
+      });
+
+      $("simulateStroke").addEventListener("click", async () => {
+        setCrashed(false);
+        document.body.classList.add("glitch");
+        setTimeout(() => document.body.classList.remove("glitch"), 500);
+        await new Promise((r) => setTimeout(r, 500));
+        await fetch("/inject_fault", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ agentName: "reviewer", faultType: "kill" })
+        });
+        await fetch("/inject_fault", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ agentName: "coder", faultType: "kill" })
+        });
+        await startRun("axonlotl");
+      });
+
+      $("refreshNetwork").addEventListener("click", async () => {
+        await fetch("/api/reset_network", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+        addFeed("ok", "Network refreshed. Healthy brain baseline restored.");
+        setCrashed(false);
+      });
+
+      $("globalHeal").addEventListener("click", async () => {
+        await fetch("/api/heal_all", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+        addFeed("ok", "Global heal applied. All agents restored to full health.");
+      });
+
+      updateVitals(1, 0);
+    </script>
+  </body>
+</html>
